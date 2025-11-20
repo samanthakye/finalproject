@@ -1,7 +1,7 @@
 // --- CONFIGURATION ---
-const spacing = 35; // Increased spacing for a less crowded feel
-const maxDotDiameter = 25; // Slightly larger max size
-const minDotDiameter = 3; // Slightly smaller min size
+const spacing = 50; // Increased spacing for a less crowded feel
+const maxDotDiameter = 35; // Slightly larger max size
+const minDotDiameter = 5; // Slightly smaller min size
 const influenceRadius = 200; // Larger area of effect
 const repulsionStrength = 0.8; // How strongly the mouse pushes dots
 const springStiffness = 0.05; // How quickly dots return to position
