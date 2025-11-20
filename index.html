@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Dot Grid (Black & White)</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Configure Tailwind to use Inter font and high-contrast B&W colors -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        // High Contrast Black/White Scheme
+                        'background': '#000000', // Pure black
+                        'dot-color': '#ffffff', // Pure white
+                        'text-color': '#ffffff', // Pure white for text
+                        'accent': '#111111',    // Very subtle accent
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom styles for full-screen canvas and body */
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            /* Make body fill the entire viewport */
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: theme('colors.background');
+            overflow: hidden; /* Prevent scrolling */
+        }
+        canvas {
+            display: block;
+            cursor: none; /* Hide default cursor */
+        }
+        /* Style for the overlay text */
+        #info-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            pointer-events: none; /* Allows mouse events to pass through to the canvas */
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.2); /* Subtle glow for text */
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Overlay text is fixed to the top -->
+    <div id="info-overlay" class="p-6">
+        <h1 class="text-xl font-light text-white">Generative Grid (Black & White)</h1>
+        <p class="text-sm text-white/80">Move mouse to interact.</p>
+    </div>
+    
+    <canvas id="dotGridCanvas"></canvas>
+
+    <script>
+        // --- Canvas Setup ---
+        const canvas = document.getElementById('dotGridCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Configuration Constants adjusted for B&W look
+        const GRID_SIZE = 15; // Reduced dot count for sparser, larger dots
+        const BASE_RADIUS = 3; // Larger minimum radius for visible dots
+        const MAX_SCALE = 5;   // Max scale factor (dot grows to 5 * 3 = 15px radius)
+        const INTERACTION_DISTANCE = 180; // Interaction radius
+        
+        // Using dynamic colors from the Tailwind config
+        const DOT_COLOR = getComputedStyle(document.documentElement).getPropertyValue('--dot-color') || '#ffffff';
+
+        let dots = [];
+        let mouse = { x: null, y: null, active: false };
+        let canvasWidth, canvasHeight;
+        
+        // --- Dot Class ---
+        class Dot {
+            constructor(gridX, gridY) {
+                this.gridX = gridX;
+                this.gridY = gridY;
+                this.x = 0;
+                this.y = 0;
+                this.radius = BASE_RADIUS;
+            }
+
+            // Updates the dot's radius based on mouse proximity
+            update() {
+                // Smoothly reset radius when mouse is inactive
+                if (!mouse.active) {
+                    this.radius += (BASE_RADIUS - this.radius) * 0.1; 
+                    return;
+                }
+                
+                // Calculate distance to mouse
+                const dx = mouse.x - this.x;
+                const dy = mouse.y - this.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                // Determine influence (0 to 1)
+                let influence = Math.max(0, 1 - distance / INTERACTION_DISTANCE);
+                
+                // Use a cubic power curve for a sharper, more defined effect
+                influence = Math.pow(influence, 3); 
+
+                // Calculate the target radius
+                const targetRadius = BASE_RADIUS + influence * (MAX_SCALE * BASE_RADIUS - BASE_RADIUS);
+                
+                // Smoothly transition the current radius towards the target radius
+                this.radius += (targetRadius - this.radius) * 0.2; 
+            }
+
+            // Draws the dot
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = DOT_COLOR;
+                ctx.fill();
+            }
+        }
+
+        // --- Initialization and Setup Functions ---
+
+        function initDots() {
+            dots = [];
+            for (let i = 0; i < GRID_SIZE; i++) {
+                for (let j = 0; j < GRID_SIZE; j++) {
+                    dots.push(new Dot(i, j));
+                }
+            }
+            handleResize();
+        }
+
+        // Handles window resize and recalculates canvas and dot positions (FULL SCREEN LOGIC)
+        function handleResize() {
+            // Set canvas to full viewport size
+            canvasWidth = window.innerWidth;
+            canvasHeight = window.innerHeight;
+            
+            canvas.width = canvasWidth;
+            canvas.height = canvasHeight;
+
+            // Calculate spacing based on the available screen size
+            const SPACING_X = canvasWidth / (GRID_SIZE + 1); 
+            const SPACING_Y = canvasHeight / (GRID_SIZE + 1); 
+            
+            // Recalculate each dot's position
+            dots.forEach(dot => {
+                dot.x = SPACING_X * (dot.gridX + 1); 
+                dot.y = SPACING_Y * (dot.gridY + 1);
+            });
+        }
+
+        // --- Interaction Event Listeners ---
+        
+        function handleMouseMove(e) {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+            mouse.active = true;
+        }
+
+        function handleMouseLeave() {
+            mouse.active = false;
+        }
+
+        // --- Animation Loop ---
+        function animate() {
+            // Clears the canvas completely for pure black background
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+            
+            // Update and draw all dots
+            dots.forEach(dot => {
+                dot.update();
+                dot.draw();
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        // --- Start Application ---
+        window.addEventListener('load', () => {
+            initDots();
+            animate();
+
+            window.addEventListener('resize', handleResize);
+            window.addEventListener('mousemove', handleMouseMove);
+            window.addEventListener('mouseleave', handleMouseLeave);
+        });
+
+    </script>
+</body>
+</html>
