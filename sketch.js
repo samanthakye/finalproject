@@ -7,9 +7,7 @@ const repulsionStrength = 0.8; // How strongly the mouse pushes dots
 const springStiffness = 0.05; // How quickly dots return to position
 const damping = 0.85; // Easing for the spring motion
 
-// Color Palette - A vibrant, mesmerizing selection
-const PALETTE = ['#FF4B2B', '#FF416C', '#E54F6D', '#BE5A83', '#A166AB', '#7A6EBF', '#4F7DCB', '#2A8BBF', '#0097A7', '#00A896', '#4CAF50', '#8BC34A'];
-let dots = [];
+const DOT_COLOR = '#DFFF00'; // Chartreuse
 
 class Dot {
   constructor(x, y) {
@@ -20,7 +18,7 @@ class Dot {
     this.vx = 0; // Velocity x
     this.vy = 0; // Velocity y
     this.diameter = maxDotDiameter;
-    this.baseColor = random(PALETTE);
+    // this.baseColor = random(PALETTE); // Removed as we are using a single color
   }
 
   update() {
@@ -64,13 +62,12 @@ class Dot {
   }
 
   draw() {
-    let distToOrigin = dist(this.x, this.y, this.originalX, this.originalY);
-    // Interpolate color based on how far the dot has been pushed
-    let colorIndex = floor(map(distToOrigin, 0, influenceRadius / 3, 0, PALETTE.length));
-    colorIndex = constrain(colorIndex, 0, PALETTE.length - 1);
-    let c = color(PALETTE[colorIndex]);
+    // let distToOrigin = dist(this.x, this.y, this.originalX, this.originalY); // No longer needed for color
+    // let colorIndex = floor(map(distToOrigin, 0, influenceRadius / 3, 0, PALETTE.length)); // No longer needed for color
+    // colorIndex = constrain(colorIndex, 0, PALETTE.length - 1); // No longer needed for color
+    // let c = color(PALETTE[colorIndex]); // No longer needed for color
     
-    fill(c);
+    fill(DOT_COLOR);
     ellipse(this.x, this.y, this.diameter, this.diameter);
   }
 }
