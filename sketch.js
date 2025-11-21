@@ -76,22 +76,24 @@ function setup() {
   createCanvas(windowWidth, windowHeight);
   noStroke();
   
-  // Initialize webcam feed
-  video = createCapture(VIDEO);
+  // Initialize webcam feed with a callback
+  video = createCapture(VIDEO, videoReady);
   video.size(width, height);
   video.hide(); // Hide the video element, we only need the data
-
-  // Initialize the Handpose model
-  handpose = ml5.handpose(video, modelReady);
-  handpose.on("predict", results => {
-    predictions = results;
-  });
 
   // Set initial interaction point to center of screen
   handX = width / 2;
   handY = height / 2;
 
   createGrid();
+}
+
+function videoReady() {
+  // Initialize the Handpose model now that the video is ready
+  handpose = ml5.handpose(video, modelReady);
+  handpose.on("predict", results => {
+    predictions = results;
+  });
 }
 
 function modelReady() {
@@ -146,5 +148,6 @@ function draw() {
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
   video.size(width, height); // Resize video feed
+  dots = [];
   createGrid();
 }
