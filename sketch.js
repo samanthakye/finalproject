@@ -1,3 +1,11 @@
+// --- HAND TRACKING & ML5 ---
+let handpose;
+let video;
+let predictions = [];
+let handX = 0; // X-coordinate for interaction
+let handY = 0; // Y-coordinate for interaction
+let lerpFactor = 0.1; // Smoothing factor for hand movement
+
 // --- CONFIGURATION ---
 const spacing = 50; // Increased spacing for a less crowded feel
 const maxDotDiameter = 35; // Slightly larger max size
@@ -6,8 +14,8 @@ const influenceRadius = 200; // Larger area of effect
 const repulsionStrength = 0.8; // How strongly the mouse pushes dots
 const springStiffness = 0.05; // How quickly dots return to position
 const damping = 0.85; // Easing for the spring motion
-
 const DOT_COLOR = '#DFFF00'; // Chartreuse
+let dots = [];
 
 class Dot {
   constructor(x, y) {
@@ -18,18 +26,17 @@ class Dot {
     this.vx = 0; // Velocity x
     this.vy = 0; // Velocity y
     this.diameter = maxDotDiameter;
-    // this.baseColor = random(PALETTE); // Removed as we are using a single color
   }
 
   update() {
-    let targetX = mouseX;
-    let targetY = mouseY;
+    // Use smoothed handX/handY for interaction
+    let targetX = handX;
+    let targetY = handY;
     let d = dist(this.x, this.y, targetX, targetY);
 
-    // --- Repulsion from mouse ---
+    // --- Repulsion from mouse/hand ---
     if (d < influenceRadius) {
       let angle = atan2(this.y - targetY, this.x - targetX);
-      // Force is stronger when closer
       let force = map(d, 0, influenceRadius, repulsionStrength, 0);
       this.vx += cos(angle) * force;
       this.vy += sin(angle) * force;
@@ -41,7 +48,7 @@ class Dot {
     this.vx += dx * springStiffness;
     this.vy += dy * springStiffness;
 
-    // Apply damping to slow it down
+    // Apply damping
     this.vx *= damping;
     this.vy *= damping;
 
@@ -49,24 +56,17 @@ class Dot {
     this.x += this.vx;
     this.y += this.vy;
     
-    // --- Size and Color based on distance to original position ---
+    // --- Size based on distance to original position ---
     let distToOrigin = dist(this.x, this.y, this.originalX, this.originalY);
-
-    // The farther it's pushed, the smaller and more colorful it gets
     this.diameter = map(distToOrigin, 0, influenceRadius / 2, maxDotDiameter, minDotDiameter);
     this.diameter = constrain(this.diameter, minDotDiameter, maxDotDiameter);
     
-    // Add a subtle "breathing" effect to all dots
+    // Add "breathing" effect
     let pulse = sin(frameCount * 0.05 + this.originalX * 0.1) * 2;
     this.diameter += pulse;
   }
 
   draw() {
-    // let distToOrigin = dist(this.x, this.y, this.originalX, this.originalY); // No longer needed for color
-    // let colorIndex = floor(map(distToOrigin, 0, influenceRadius / 3, 0, PALETTE.length)); // No longer needed for color
-    // colorIndex = constrain(colorIndex, 0, PALETTE.length - 1); // No longer needed for color
-    // let c = color(PALETTE[colorIndex]); // No longer needed for color
-    
     fill(DOT_COLOR);
     ellipse(this.x, this.y, this.diameter, this.diameter);
   }
@@ -75,16 +75,31 @@ class Dot {
 function setup() {
   createCanvas(windowWidth, windowHeight);
   noStroke();
-  rectMode(CENTER);
-  colorMode(HSB, 360, 100, 100, 100);
+  
+  // Initialize webcam feed
+  video = createCapture(VIDEO);
+  video.size(width, height);
+  video.hide(); // Hide the video element, we only need the data
 
-  // Recalculate dots on setup
+  // Initialize the Handpose model
+  handpose = ml5.handpose(video, modelReady);
+  handpose.on("predict", results => {
+    predictions = results;
+  });
+
+  // Set initial interaction point to center of screen
+  handX = width / 2;
+  handY = height / 2;
+
   createGrid();
 }
 
+function modelReady() {
+  console.log("Handpose Model Ready!");
+}
+
 function createGrid() {
-  dots = []; // Clear existing dots
-  // Adjust grid to be centered
+  dots = [];
   const cols = floor(width / spacing);
   const rows = floor(height / spacing);
   const offsetX = (width - cols * spacing) / 2 + spacing / 2;
@@ -101,13 +116,35 @@ function createGrid() {
 
 function draw() {
   background(255); // White background
+
+  // --- Hand Tracking Logic ---
+  let targetX = mouseX;
+  let targetY = mouseY;
+  
+  if (predictions.length > 0) {
+    // We have a hand! Use the index finger tip (landmark 8)
+    const keypoint = predictions[0].landmarks[8];
+    targetX = keypoint[0];
+    targetY = keypoint[1];
+  }
+
+  // Smooth the interaction point using lerp
+  handX = lerp(handX, targetX, lerpFactor);
+  handY = lerp(handY, targetY, lerpFactor);
+
+  // Update and draw all dots
   for (let dot of dots) {
     dot.update();
     dot.draw();
   }
+  
+  // Optional: Draw a circle at the interaction point for debugging
+  // fill(255, 0, 0, 100);
+  // ellipse(handX, handY, 30, 30);
 }
 
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
-  createGrid(); // Recreate the grid with new dimensions
+  video.size(width, height); // Resize video feed
+  createGrid();
 }
