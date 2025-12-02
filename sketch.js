@@ -5,6 +5,7 @@ let lerpFactor = 0.05; // Smoothing factor for hand movement
 let isHandOpen = false;
 let video;
 let backgroundBuffer; // Graphics buffer for blurred background
+let currentHandLandmarks = null; // Stores the latest hand landmarks for visualization
 
 // --- CONFIGURATION ---
 const spacing = 60; // Denser grid
@@ -91,7 +92,8 @@ class Dot {
 
 function onResults(results) {
   if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-    const landmarks = results.multiHandLandmarks[0];
+    currentHandLandmarks = results.multiHandLandmarks[0];
+    const landmarks = currentHandLandmarks;
     
     // Calculate hand openness
     const thumbTip = landmarks[4];
@@ -115,6 +117,7 @@ function onResults(results) {
     handY = lerp(handY, targetY, lerpFactor);
   } else {
     isHandOpen = false;
+    currentHandLandmarks = null;
   }
 }
 
@@ -176,6 +179,35 @@ function createGrid() {
   }
 }
 
+function drawHandLandmarks() {
+  if (currentHandLandmarks) {
+    const connections = [
+      [0, 1], [1, 2], [2, 3], [3, 4], // Thumb
+      [0, 5], [5, 6], [6, 7], [7, 8], // Index finger
+      [9, 10], [10, 11], [11, 12], // Middle finger (connecting to palm via 0)
+      [0, 13], [13, 14], [14, 15], [15, 16], // Ring finger
+      [0, 17], [17, 18], [18, 19], [19, 20], // Pinky finger
+      [5, 9], [9, 13], [13, 17] // Palm base connections
+    ];
+
+    // Draw connections
+    stroke(255, 0, 0); // Red lines
+    strokeWeight(2);
+    for (let connection of connections) {
+      const p1 = currentHandLandmarks[connection[0]];
+      const p2 = currentHandLandmarks[connection[1]];
+      line(p1.x * width, p1.y * height, p2.x * width, p2.y * height);
+    }
+
+    // Draw landmarks
+    noStroke();
+    fill(0, 255, 0); // Green dots
+    for (let landmark of currentHandLandmarks) {
+      ellipse(landmark.x * width, landmark.y * height, 10, 10);
+    }
+  }
+}
+
 function draw() {
   background(0); // Clear main canvas
 
@@ -198,6 +230,8 @@ function draw() {
   push(); // Save the state before dot mirroring
   translate(width, 0);
   scale(-1, 1);
+
+  drawHandLandmarks(); // Draw the hand skeleton
 
   // Update and draw all dots
   for (let dot of dots) {
