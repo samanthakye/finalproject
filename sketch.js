@@ -6,14 +6,14 @@ let isHandOpen = false;
 
 // --- CONFIGURATION ---
 const spacing = 80; // Sparser grid
-const maxDotDiameter = 20; // Smaller max size
-const minDotDiameter = 2; // Smaller min size
+const maxDotDiameter = 40; // Bigger max size
+const minDotDiameter = 5; // Bigger min size
 const influenceRadius = 300; // Larger area of effect
 const repulsionStrength = 0.8; // How strongly the mouse pushes dots
 const springStiffness = 0.05; // How quickly dots return to position
 const damping = 0.85; // Easing for the spring motion
-const DOT_COLOR = '#00FF00'; // Green
-const OPEN_HAND_DOT_COLOR = '#FFFF00'; // Bright Yellow
+const DOT_COLOR = '#DFFF00'; // Chartreuse
+const OPEN_HAND_DOT_COLOR = '#BF00FF'; // Bright Purple
 let dots = [];
 
 class Dot {
@@ -168,7 +168,7 @@ function createGrid() {
 function draw() {
   translate(width, 0);
   scale(-1, 1);
-  background('#F5F5F5'); // Off-white background
+  background('#FF00FF'); // Bright pink background
 
   // Update and draw all dots
   for (let dot of dots) {
