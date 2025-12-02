@@ -149,7 +149,7 @@ function setup() {
 
 function createGrid() {
   dots = [];
-  const numberOfDots = 500; // More dots for cosmic dust effect
+  const numberOfDots = 2000; // A lot more dots for cosmic dust effect
 
   for (let i = 0; i < numberOfDots; i++) {
     let x = random(width);
