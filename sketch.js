@@ -5,10 +5,10 @@ let lerpFactor = 0.1; // Smoothing factor for hand movement
 let isHandOpen = false;
 
 // --- CONFIGURATION ---
-const spacing = 50; // Increased spacing for a less crowded feel
-const maxDotDiameter = 35; // Slightly larger max size
-const minDotDiameter = 5; // Slightly smaller min size
-const influenceRadius = 200; // Larger area of effect
+const spacing = 80; // Sparser grid
+const maxDotDiameter = 50; // Larger max size
+const minDotDiameter = 10; // Larger min size
+const influenceRadius = 300; // Larger area of effect
 const repulsionStrength = 0.8; // How strongly the mouse pushes dots
 const springStiffness = 0.05; // How quickly dots return to position
 const damping = 0.85; // Easing for the spring motion
@@ -36,8 +36,8 @@ class Dot {
     let currentRepulsionStrength = repulsionStrength;
 
     if (isHandOpen) {
-      currentInfluenceRadius *= 1.5;
-      currentRepulsionStrength *= 2;
+      currentInfluenceRadius *= 2.5;
+      currentRepulsionStrength *= 3.5;
     }
 
     // --- Repulsion from mouse/hand ---
