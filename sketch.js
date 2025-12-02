@@ -14,8 +14,8 @@ const influenceRadius = 300; // Larger area of effect
 const repulsionStrength = 2.5; // How strongly the mouse pushes dots
 const springStiffness = 0.05; // How quickly dots return to position
 const damping = 0.85; // Easing for the spring motion
-const DOT_COLOR = '#00FF00'; // Vibrant Green
-const OPEN_HAND_DOT_COLOR = '#FFA500'; // Orange
+const DOT_COLOR = color(0, 255, 0, 80); // Transparent Green
+const OPEN_HAND_DOT_COLOR = color(255, 165, 0, 100); // Transparent Orange
 let dots = [];
 
 class Dot {
