@@ -5,9 +5,9 @@ let lerpFactor = 0.1; // Smoothing factor for hand movement
 let isHandOpen = false;
 
 // --- CONFIGURATION ---
-const spacing = 80; // Sparser grid
-const maxDotDiameter = 40; // Bigger max size
-const minDotDiameter = 5; // Bigger min size
+const spacing = 60; // Denser grid
+const maxDotDiameter = 30; // Slightly smaller max size
+const minDotDiameter = 3; // Slightly smaller min size
 const influenceRadius = 300; // Larger area of effect
 const repulsionStrength = 0.8; // How strongly the mouse pushes dots
 const springStiffness = 0.05; // How quickly dots return to position
