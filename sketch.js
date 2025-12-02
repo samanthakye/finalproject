@@ -6,8 +6,8 @@ let isHandOpen = false;
 
 // --- CONFIGURATION ---
 const spacing = 80; // Sparser grid
-const maxDotDiameter = 50; // Larger max size
-const minDotDiameter = 10; // Larger min size
+const maxDotDiameter = 20; // Smaller max size
+const minDotDiameter = 2; // Smaller min size
 const influenceRadius = 300; // Larger area of effect
 const repulsionStrength = 0.8; // How strongly the mouse pushes dots
 const springStiffness = 0.05; // How quickly dots return to position
@@ -89,7 +89,7 @@ function onResults(results) {
     const pinkyTip = landmarks[20];
     const handOpenness = dist(thumbTip.x, thumbTip.y, pinkyTip.x, pinkyTip.y);
     
-    if (handOpenness > 0.3) {
+    if (handOpenness > 0.4) {
       isHandOpen = true;
     } else {
       isHandOpen = false;
@@ -149,7 +149,7 @@ function setup() {
 
 function createGrid() {
   dots = [];
-  const numberOfDots = 200; // Fixed number of dots for cosmic dust effect
+  const numberOfDots = 500; // More dots for cosmic dust effect
 
   for (let i = 0; i < numberOfDots; i++) {
     let x = random(width);
