@@ -146,7 +146,9 @@ function createGrid() {
 }
 
 function draw() {
-  background(0); // Black background
+  translate(width, 0);
+  scale(-1, 1);
+  background('#222222'); // Dark gray background
 
   // Update and draw all dots
   for (let dot of dots) {
@@ -163,8 +165,4 @@ function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
   dots = [];
   createGrid();
-
-  if (window.showHeadings) {
-    window.showHeadings();
-  }
 }

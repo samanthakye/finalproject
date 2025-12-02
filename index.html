@@ -4,44 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Interactive Dot Grid</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
     <!-- Link p5.js library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.2/p5.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
     <!-- Link your custom style and sketch files -->
-    <link rel="stylesheet" href="style.css">
     <script src="sketch.js"></script>
 </head>
 <body>
-    <div class="headings">
-        <h1>Interactive Dot Grid</h1>
-        <h2>Move your hand to interact with the dots</h2>
-    </div>
     <video class="input_video" style="display: none;"></video>
     <!-- p5.js canvas will be placed here -->
-    <script>
-        const headings = document.querySelector('.headings');
-        let hideTimeout;
-
-        function showHeadings() {
-            headings.classList.remove('hidden');
-            clearTimeout(hideTimeout);
-            hideTimeout = setTimeout(() => {
-                headings.classList.add('hidden');
-            }, 5000);
-        }
-
-        window.showHeadings = showHeadings; // Make it global
-
-        headings.addEventListener('click', showHeadings);
-
-        // Initial hide
-        hideTimeout = setTimeout(() => {
-            headings.classList.add('hidden');
-        }, 5000);
-    </script>
 </body>
 </html>
