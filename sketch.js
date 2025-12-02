@@ -2,6 +2,7 @@
 let handX = 0; // X-coordinate for interaction
 let handY = 0; // Y-coordinate for interaction
 let lerpFactor = 0.1; // Smoothing factor for hand movement
+let isHandOpen = false;
 
 // --- CONFIGURATION ---
 const spacing = 50; // Increased spacing for a less crowded feel
@@ -31,10 +32,18 @@ class Dot {
     let targetY = handY;
     let d = dist(this.x, this.y, targetX, targetY);
 
+    let currentInfluenceRadius = influenceRadius;
+    let currentRepulsionStrength = repulsionStrength;
+
+    if (isHandOpen) {
+      currentInfluenceRadius *= 1.5;
+      currentRepulsionStrength *= 2;
+    }
+
     // --- Repulsion from mouse/hand ---
-    if (d < influenceRadius) {
+    if (d < currentInfluenceRadius) {
       let angle = atan2(this.y - targetY, this.x - targetX);
-      let force = map(d, 0, influenceRadius, repulsionStrength, 0);
+      let force = map(d, 0, currentInfluenceRadius, currentRepulsionStrength, 0);
       this.vx += cos(angle) * force;
       this.vy += sin(angle) * force;
     }
@@ -72,7 +81,19 @@ class Dot {
 function onResults(results) {
   if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
     const landmarks = results.multiHandLandmarks[0];
-    // Use index finger tip (landmark 8)
+    
+    // Calculate hand openness
+    const thumbTip = landmarks[4];
+    const pinkyTip = landmarks[20];
+    const handOpenness = dist(thumbTip.x, thumbTip.y, pinkyTip.x, pinkyTip.y);
+    
+    if (handOpenness > 0.3) {
+      isHandOpen = true;
+    } else {
+      isHandOpen = false;
+    }
+
+    // Use index finger tip (landmark 8) for interaction
     const keypoint = landmarks[8];
     // Convert normalized coordinates to pixel coordinates
     let targetX = keypoint.x * width;
@@ -81,6 +102,8 @@ function onResults(results) {
     // Smooth the interaction point using lerp
     handX = lerp(handX, targetX, lerpFactor);
     handY = lerp(handY, targetY, lerpFactor);
+  } else {
+    isHandOpen = false;
   }
 }
 
