@@ -1,7 +1,7 @@
 // --- HAND TRACKING & MEDIAPIPE ---
 let handX = 0; // X-coordinate for interaction
 let handY = 0; // Y-coordinate for interaction
-let lerpFactor = 0.1; // Smoothing factor for hand movement
+let lerpFactor = 0.05; // Smoothing factor for hand movement
 let isHandOpen = false;
 let video;
 let backgroundBuffer; // Graphics buffer for blurred background
