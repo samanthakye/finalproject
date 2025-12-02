@@ -3,6 +3,7 @@ let handX = 0; // X-coordinate for interaction
 let handY = 0; // Y-coordinate for interaction
 let lerpFactor = 0.1; // Smoothing factor for hand movement
 let isHandOpen = false;
+let lastHandOpenState = false;
 
 // --- CONFIGURATION ---
 const spacing = 60; // Denser grid
@@ -25,10 +26,32 @@ class Dot {
     this.vx = 0; // Velocity x
     this.vy = 0; // Velocity y
     this.diameter = maxDotDiameter;
-    this.currentColor = color(DOT_COLOR); // Initialize with default color
+    this.baseColor = color(DOT_COLOR);
+    this.targetColor = color(DOT_COLOR);
+    this.currentColor = color(DOT_COLOR);
+    this.isTransitioning = false;
+    this.transitionProgress = 0;
+  }
+
+  startTransition(newColor) {
+    if (this.targetColor.toString() !== newColor.toString()) {
+      this.isTransitioning = true;
+      this.targetColor = newColor;
+      this.transitionProgress = 0;
+    }
   }
 
   update() {
+    // --- Transition Logic ---
+    if (this.isTransitioning) {
+      this.transitionProgress += 0.05; // Speed of transition
+      if (this.transitionProgress >= 1) {
+        this.transitionProgress = 1;
+        this.isTransitioning = false;
+        this.baseColor = this.targetColor;
+      }
+    }
+    
     // Use smoothed handX/handY for interaction
     let targetX = handX;
     let targetY = handY;
@@ -75,15 +98,20 @@ class Dot {
     let distToOrigin = dist(this.x, this.y, this.originalX, this.originalY);
     this.diameter = map(distToOrigin, 0, influenceRadius / 2, maxDotDiameter, minDotDiameter);
     this.diameter = constrain(this.diameter, minDotDiameter, maxDotDiameter);
-    
-    // --- Color change based on hand openness ---
-    let targetColor = isHandOpen ? color(OPEN_HAND_DOT_COLOR) : color(DOT_COLOR);
-    this.currentColor = lerpColor(this.currentColor, targetColor, 0.1);
   }
 
   draw() {
-    fill(this.currentColor);
-    ellipse(this.x, this.y, this.diameter, this.diameter);
+    if (this.isTransitioning) {
+      // Draw the base color
+      fill(this.baseColor);
+      ellipse(this.x, this.y, this.diameter, this.diameter);
+      // Draw the expanding target color
+      fill(this.targetColor);
+      ellipse(this.x, this.y, this.diameter * this.transitionProgress, this.diameter * this.transitionProgress);
+    } else {
+      fill(this.targetColor);
+      ellipse(this.x, this.y, this.diameter, this.diameter);
+    }
   }
 }
 
@@ -96,11 +124,23 @@ function onResults(results) {
     const pinkyTip = landmarks[20];
     const handOpenness = dist(thumbTip.x, thumbTip.y, pinkyTip.x, pinkyTip.y);
     
-    if (handOpenness > 0.4) {
-      isHandOpen = true;
-    } else {
-      isHandOpen = false;
+    isHandOpen = handOpenness > 0.4;
+
+    if (isHandOpen !== lastHandOpenState) {
+      let newColor = isHandOpen ? color(OPEN_HAND_DOT_COLOR) : color(DOT_COLOR);
+      let centerX = width / 2;
+      let centerY = height / 2;
+      
+      for (let dot of dots) {
+        let d = dist(dot.originalX, dot.originalY, centerX, centerY);
+        let delay = map(d, 0, width / 2, 0, 500); // Max delay of 500ms
+        setTimeout(() => {
+          dot.startTransition(newColor);
+        }, delay);
+      }
     }
+    
+    lastHandOpenState = isHandOpen;
 
     // Use index finger tip (landmark 8) for interaction
     const keypoint = landmarks[8];
@@ -113,6 +153,13 @@ function onResults(results) {
     handY = lerp(handY, targetY, lerpFactor);
   } else {
     isHandOpen = false;
+    if (isHandOpen !== lastHandOpenState) {
+      let newColor = color(DOT_COLOR);
+      for (let dot of dots) {
+        dot.startTransition(newColor);
+      }
+    }
+    lastHandOpenState = isHandOpen;
   }
 }
 
@@ -120,6 +167,8 @@ function setup() {
   createCanvas(windowWidth, windowHeight);
   noStroke();
   noCursor();
+  
+  colorMode(RGB);
 
   // Set initial interaction point to center of screen
   handX = width / 2;
