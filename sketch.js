@@ -3,6 +3,7 @@ let handX = 0; // X-coordinate for interaction
 let handY = 0; // Y-coordinate for interaction
 let lerpFactor = 0.1; // Smoothing factor for hand movement
 let isHandOpen = false;
+let video;
 
 // --- CONFIGURATION ---
 const spacing = 60; // Denser grid
@@ -12,7 +13,7 @@ const influenceRadius = 300; // Larger area of effect
 const repulsionStrength = 0.8; // How strongly the mouse pushes dots
 const springStiffness = 0.05; // How quickly dots return to position
 const damping = 0.85; // Easing for the spring motion
-const DOT_COLOR = '#ADFF2F'; // GreenYellow
+const DOT_COLOR = '#00FF00'; // Vibrant Green
 const OPEN_HAND_DOT_COLOR = '#FFA500'; // Orange
 let dots = [];
 
@@ -127,7 +128,7 @@ function setup() {
 
   createGrid();
 
-  const videoElement = document.querySelector('.input_video');
+  video = document.querySelector('.input_video');
   const hands = new Hands({
     locateFile: (file) => {
       return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
@@ -143,9 +144,9 @@ function setup() {
 
   hands.onResults(onResults);
 
-  const camera = new Camera(videoElement, {
+  const camera = new Camera(video, {
     onFrame: async () => {
-      await hands.send({ image: videoElement });
+      await hands.send({ image: video });
     },
     width: 1280,
     height: 720
@@ -173,7 +174,12 @@ function createGrid() {
 function draw() {
   translate(width, 0);
   scale(-1, 1);
-  background('#FF00FF'); // Bright pink background
+  
+  if (video) {
+    image(video, 0, 0, width, height);
+  } else {
+    background('#FF00FF'); // Bright pink background
+  }
 
   // Update and draw all dots
   for (let dot of dots) {
