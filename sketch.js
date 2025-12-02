@@ -13,6 +13,7 @@ const repulsionStrength = 0.8; // How strongly the mouse pushes dots
 const springStiffness = 0.05; // How quickly dots return to position
 const damping = 0.85; // Easing for the spring motion
 const DOT_COLOR = '#00FF00'; // Green
+const OPEN_HAND_DOT_COLOR = '#FFFF00'; // Bright Yellow
 let dots = [];
 
 class Dot {
@@ -24,6 +25,7 @@ class Dot {
     this.vx = 0; // Velocity x
     this.vy = 0; // Velocity y
     this.diameter = maxDotDiameter;
+    this.currentColor = color(DOT_COLOR); // Initialize with default color
   }
 
   update() {
@@ -67,13 +69,13 @@ class Dot {
     this.diameter = map(distToOrigin, 0, influenceRadius / 2, maxDotDiameter, minDotDiameter);
     this.diameter = constrain(this.diameter, minDotDiameter, maxDotDiameter);
     
-    // Add "breathing" effect
-    let pulse = sin(frameCount * 0.05 + this.originalX * 0.1) * 2;
-    this.diameter += pulse;
+    // --- Color change based on hand openness ---
+    let targetColor = isHandOpen ? color(OPEN_HAND_DOT_COLOR) : color(DOT_COLOR);
+    this.currentColor = lerpColor(this.currentColor, targetColor, 0.1);
   }
 
   draw() {
-    fill(DOT_COLOR);
+    fill(this.currentColor);
     ellipse(this.x, this.y, this.diameter, this.diameter);
   }
 }
@@ -147,17 +149,12 @@ function setup() {
 
 function createGrid() {
   dots = [];
-  const cols = floor(width / spacing);
-  const rows = floor(height / spacing);
-  const offsetX = (width - cols * spacing) / 2 + spacing / 2;
-  const offsetY = (height - rows * spacing) / 2 + spacing / 2;
+  const numberOfDots = 200; // Fixed number of dots for cosmic dust effect
 
-  for (let i = 0; i < cols; i++) {
-    for (let j = 0; j < rows; j++) {
-      let x = i * spacing + offsetX;
-      let y = j * spacing + offsetY;
-      dots.push(new Dot(x, y));
-    }
+  for (let i = 0; i < numberOfDots; i++) {
+    let x = random(width);
+    let y = random(height);
+    dots.push(new Dot(x, y));
   }
 }
 
