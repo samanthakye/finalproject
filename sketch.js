@@ -12,8 +12,8 @@ const influenceRadius = 300; // Larger area of effect
 const repulsionStrength = 0.8; // How strongly the mouse pushes dots
 const springStiffness = 0.05; // How quickly dots return to position
 const damping = 0.85; // Easing for the spring motion
-const DOT_COLOR = 255; // White
-const OPEN_HAND_DOT_COLOR = '#00BFFF'; // Bright Blue
+const DOT_COLOR = '#00FF00'; // Green
+const OPEN_HAND_DOT_COLOR = '#FFFF00'; // Bright Yellow
 let dots = [];
 
 class Dot {
@@ -41,6 +41,13 @@ class Dot {
       currentInfluenceRadius *= 2.5;
       currentRepulsionStrength *= 3.5;
     }
+
+    // --- Floating effect ---
+    let noiseFactor = 0.005;
+    let noiseAngle = noise(this.x * noiseFactor, this.y * noiseFactor, frameCount * 0.01) * TWO_PI;
+    let noiseForce = 0.1;
+    this.vx += cos(noiseAngle) * noiseForce;
+    this.vy += sin(noiseAngle) * noiseForce;
 
     // --- Repulsion from mouse/hand ---
     if (d < currentInfluenceRadius) {
@@ -161,7 +168,7 @@ function createGrid() {
 function draw() {
   translate(width, 0);
   scale(-1, 1);
-  background(0); // Black background
+  background('#F5F5F5'); // Off-white background
 
   // Update and draw all dots
   for (let dot of dots) {
