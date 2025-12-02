@@ -11,7 +11,7 @@ const influenceRadius = 200; // Larger area of effect
 const repulsionStrength = 0.8; // How strongly the mouse pushes dots
 const springStiffness = 0.05; // How quickly dots return to position
 const damping = 0.85; // Easing for the spring motion
-const DOT_COLOR = 255; // White
+const DOT_COLOR = '#7FFF00'; // Green
 let dots = [];
 
 class Dot {
@@ -148,7 +148,7 @@ function createGrid() {
 function draw() {
   translate(width, 0);
   scale(-1, 1);
-  background('#222222'); // Dark gray background
+  background(255); // White background
 
   // Update and draw all dots
   for (let dot of dots) {
