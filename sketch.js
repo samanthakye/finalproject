@@ -11,7 +11,7 @@ const influenceRadius = 200; // Larger area of effect
 const repulsionStrength = 0.8; // How strongly the mouse pushes dots
 const springStiffness = 0.05; // How quickly dots return to position
 const damping = 0.85; // Easing for the spring motion
-const DOT_COLOR = '#7FFF00'; // Green
+const DOT_COLOR = '#00FF00'; // Green
 let dots = [];
 
 class Dot {
@@ -72,18 +72,11 @@ class Dot {
 function onResults(results) {
   if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
     const landmarks = results.multiHandLandmarks[0];
-    let avgX = 0;
-    let avgY = 0;
-    landmarks.forEach(landmark => {
-      avgX += landmark.x;
-      avgY += landmark.y;
-    });
-    avgX /= landmarks.length;
-    avgY /= landmarks.length;
-
+    // Use index finger tip (landmark 8)
+    const keypoint = landmarks[8];
     // Convert normalized coordinates to pixel coordinates
-    let targetX = avgX * width;
-    let targetY = avgY * height;
+    let targetX = keypoint.x * width;
+    let targetY = keypoint.y * height;
 
     // Smooth the interaction point using lerp
     handX = lerp(handX, targetX, lerpFactor);
@@ -148,7 +141,7 @@ function createGrid() {
 function draw() {
   translate(width, 0);
   scale(-1, 1);
-  background(255); // White background
+  background('#F5F5F5'); // Off-white background
 
   // Update and draw all dots
   for (let dot of dots) {
