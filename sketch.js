@@ -128,7 +128,9 @@ function setup() {
 
   createGrid();
 
-  video = document.querySelector('.input_video');
+  video = createCapture(VIDEO);
+  video.size(windowWidth, windowHeight);
+  video.hide();
   const hands = new Hands({
     locateFile: (file) => {
       return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
@@ -144,9 +146,9 @@ function setup() {
 
   hands.onResults(onResults);
 
-  const camera = new Camera(video, {
+  const camera = new Camera(video.elt, {
     onFrame: async () => {
-      await hands.send({ image: video });
+      await hands.send({ image: video.elt });
     },
     width: 1280,
     height: 720
@@ -175,10 +177,10 @@ function draw() {
   translate(width, 0);
   scale(-1, 1);
   
+  background(0);
+  
   if (video) {
     image(video, 0, 0, width, height);
-  } else {
-    background('#FF00FF'); // Bright pink background
   }
 
   // Update and draw all dots
