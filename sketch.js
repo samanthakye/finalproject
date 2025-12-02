@@ -12,8 +12,8 @@ const influenceRadius = 300; // Larger area of effect
 const repulsionStrength = 0.8; // How strongly the mouse pushes dots
 const springStiffness = 0.05; // How quickly dots return to position
 const damping = 0.85; // Easing for the spring motion
-const DOT_COLOR = '#DFFF00'; // Chartreuse
-const OPEN_HAND_DOT_COLOR = '#BF00FF'; // Bright Purple
+const DOT_COLOR = '#00FF00'; // Green
+const OPEN_HAND_DOT_COLOR = '#FFFF00'; // Bright Yellow
 let dots = [];
 
 class Dot {
@@ -156,19 +156,24 @@ function setup() {
 
 function createGrid() {
   dots = [];
-  const numberOfDots = 2000; // A lot more dots for cosmic dust effect
+  const cols = floor(width / spacing);
+  const rows = floor(height / spacing);
+  const offsetX = (width - cols * spacing) / 2 + spacing / 2;
+  const offsetY = (height - rows * spacing) / 2 + spacing / 2;
 
-  for (let i = 0; i < numberOfDots; i++) {
-    let x = random(width);
-    let y = random(height);
-    dots.push(new Dot(x, y));
+  for (let i = 0; i < cols; i++) {
+    for (let j = 0; j < rows; j++) {
+      let x = i * spacing + offsetX;
+      let y = j * spacing + offsetY;
+      dots.push(new Dot(x, y));
+    }
   }
 }
 
 function draw() {
   translate(width, 0);
   scale(-1, 1);
-  background('#FF00FF'); // Bright pink background
+  background('#F5F5F5'); // Off-white background
 
   // Update and draw all dots
   for (let dot of dots) {
