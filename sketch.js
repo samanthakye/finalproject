@@ -132,7 +132,7 @@ function setup() {
   backgroundBuffer = createGraphics(windowWidth, windowHeight);
 
   video = createCapture(VIDEO);
-  video.size(windowWidth, windowHeight);
+  video.size(640, 480);
   video.hide();
   const hands = new Hands({
     locateFile: (file) => {
@@ -142,7 +142,7 @@ function setup() {
 
   hands.setOptions({
     maxNumHands: 1,
-    modelComplexity: 1,
+    modelComplexity: 0,
     minDetectionConfidence: 0.5,
     minTrackingConfidence: 0.5
   });
@@ -153,8 +153,8 @@ function setup() {
     onFrame: async () => {
       await hands.send({ image: video.elt });
     },
-    width: 1280,
-    height: 720
+    width: 640,
+    height: 480
   });
   camera.start();
 }
