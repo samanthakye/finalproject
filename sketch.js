@@ -1,7 +1,4 @@
-// --- HAND TRACKING & ML5 ---
-let handpose;
-let video;
-let predictions = [];
+// --- HAND TRACKING & MEDIAPIPE ---
 let handX = 0; // X-coordinate for interaction
 let handY = 0; // Y-coordinate for interaction
 let lerpFactor = 0.1; // Smoothing factor for hand movement
@@ -14,7 +11,7 @@ const influenceRadius = 200; // Larger area of effect
 const repulsionStrength = 0.8; // How strongly the mouse pushes dots
 const springStiffness = 0.05; // How quickly dots return to position
 const damping = 0.85; // Easing for the spring motion
-const DOT_COLOR = '#DFFF00'; // Chartreuse
+const DOT_COLOR = 255; // White
 let dots = [];
 
 class Dot {
@@ -72,33 +69,65 @@ class Dot {
   }
 }
 
+function onResults(results) {
+  if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+    const landmarks = results.multiHandLandmarks[0];
+    let avgX = 0;
+    let avgY = 0;
+    landmarks.forEach(landmark => {
+      avgX += landmark.x;
+      avgY += landmark.y;
+    });
+    avgX /= landmarks.length;
+    avgY /= landmarks.length;
+
+    // Convert normalized coordinates to pixel coordinates
+    let targetX = avgX * width;
+    let targetY = avgY * height;
+
+    // Smooth the interaction point using lerp
+    handX = lerp(handX, targetX, lerpFactor);
+    handY = lerp(handY, targetY, lerpFactor);
+  }
+}
+
 function setup() {
   createCanvas(windowWidth, windowHeight);
   noStroke();
-  
-  // Initialize webcam feed with a callback
-  video = createCapture(VIDEO, videoReady);
-  video.size(width, height);
-  video.hide(); // Hide the video element, we only need the data
+  noCursor();
 
   // Set initial interaction point to center of screen
   handX = width / 2;
   handY = height / 2;
 
   createGrid();
-}
 
-function videoReady() {
-  // Initialize the Handpose model now that the video is ready
-  handpose = ml5.handpose(video, modelReady);
-  handpose.on("predict", results => {
-    predictions = results;
+  const videoElement = document.querySelector('.input_video');
+  const hands = new Hands({
+    locateFile: (file) => {
+      return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+    }
   });
+
+  hands.setOptions({
+    maxNumHands: 1,
+    modelComplexity: 1,
+    minDetectionConfidence: 0.5,
+    minTrackingConfidence: 0.5
+  });
+
+  hands.onResults(onResults);
+
+  const camera = new Camera(videoElement, {
+    onFrame: async () => {
+      await hands.send({ image: videoElement });
+    },
+    width: 1280,
+    height: 720
+  });
+  camera.start();
 }
 
-function modelReady() {
-  console.log("Handpose Model Ready!");
-}
 
 function createGrid() {
   dots = [];
@@ -117,22 +146,7 @@ function createGrid() {
 }
 
 function draw() {
-  background(255); // White background
-
-  // --- Hand Tracking Logic ---
-  let targetX = mouseX;
-  let targetY = mouseY;
-  
-  if (predictions.length > 0) {
-    // We have a hand! Use the index finger tip (landmark 8)
-    const keypoint = predictions[0].landmarks[8];
-    targetX = keypoint[0];
-    targetY = keypoint[1];
-  }
-
-  // Smooth the interaction point using lerp
-  handX = lerp(handX, targetX, lerpFactor);
-  handY = lerp(handY, targetY, lerpFactor);
+  background(0); // Black background
 
   // Update and draw all dots
   for (let dot of dots) {
@@ -147,7 +161,10 @@ function draw() {
 
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
-  video.size(width, height); // Resize video feed
   dots = [];
   createGrid();
+
+  if (window.showHeadings) {
+    window.showHeadings();
+  }
 }
