@@ -4,6 +4,7 @@ let handY = 0; // Y-coordinate for interaction
 let lerpFactor = 0.1; // Smoothing factor for hand movement
 let isHandOpen = false;
 let video;
+let backgroundBuffer; // Graphics buffer for blurred background
 
 // --- CONFIGURATION ---
 const spacing = 60; // Denser grid
@@ -128,6 +129,8 @@ function setup() {
 
   createGrid();
 
+  backgroundBuffer = createGraphics(windowWidth, windowHeight);
+
   video = createCapture(VIDEO);
   video.size(windowWidth, windowHeight);
   video.hide();
@@ -174,20 +177,34 @@ function createGrid() {
 }
 
 function draw() {
+  background(0); // Clear main canvas
+
+  if (video) {
+    // Draw video onto buffer, mirrored
+    backgroundBuffer.clear();
+    backgroundBuffer.push();
+    backgroundBuffer.translate(backgroundBuffer.width, 0);
+    backgroundBuffer.scale(-1, 1);
+    backgroundBuffer.image(video, 0, 0, backgroundBuffer.width, backgroundBuffer.height);
+    backgroundBuffer.pop();
+
+    backgroundBuffer.filter(BLUR, 5); // Blur the buffer
+
+    image(backgroundBuffer, 0, 0); // Draw blurred buffer to main canvas
+  }
+
+  // Now, draw the dots. These should also be mirrored.
+  // So, apply the mirroring transformations to the main canvas before drawing dots.
+  push(); // Save the state before dot mirroring
   translate(width, 0);
   scale(-1, 1);
-  
-  background(0);
-  
-  if (video) {
-    image(video, 0, 0, width, height);
-  }
 
   // Update and draw all dots
   for (let dot of dots) {
     dot.update();
     dot.draw();
   }
+  pop(); // Restore the original state
   
   // Optional: Draw a circle at the interaction point for debugging
   // fill(255, 0, 0, 100);
@@ -196,6 +213,9 @@ function draw() {
 
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
+  if (backgroundBuffer) {
+    backgroundBuffer.resizeCanvas(windowWidth, windowHeight);
+  }
   dots = [];
   createGrid();
 }
