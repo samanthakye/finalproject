@@ -6,12 +6,13 @@ let isHandOpen = false;
 let video;
 let backgroundBuffer; // Graphics buffer for blurred background
 let currentHandLandmarks = null; // Stores the latest hand landmarks for visualization
+let mic, fft;
 
 // --- CONFIGURATION ---
 const spacing = 60; // Denser grid
 const maxDotDiameter = 30; // Slightly smaller max size
 const minDotDiameter = 3; // Slightly smaller min size
-const influenceRadius = 300; // Larger area of effect
+let influenceRadius = 300; // Larger area of effect
 const repulsionStrength = 2.5; // How strongly the mouse pushes dots
 const springStiffness = 0.05; // How quickly dots return to position
 const damping = 0.85; // Easing for the spring motion
@@ -172,6 +173,12 @@ function setup() {
     height: 480
   });
   camera.start();
+
+  // Initialize audio input
+  mic = new p5.AudioIn();
+  mic.start();
+  fft = new p5.FFT();
+  fft.setInput(mic);
 }
 
 
@@ -221,6 +228,12 @@ function drawHandLandmarks() {
 }
 
 function draw() {
+  // Map microphone volume to influence radius
+  let volume = mic.getLevel();
+  // Map volume (0-1) to a larger radius. Use 0.3 as a high water mark for sensitivity.
+  influenceRadius = map(volume, 0, 0.3, 150, 600);
+  influenceRadius = constrain(influenceRadius, 150, 600);
+
   background(0); // Clear main canvas
 
   if (video) {
