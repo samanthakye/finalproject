@@ -2,7 +2,7 @@
 let handX = 0; // X-coordinate for interaction
 let handY = 0; // Y-coordinate for interaction
 let lerpFactor = 0.05; // Smoothing factor for hand movement
-let isHandOpen = false;
+let gesture = 'default';
 let video;
 let backgroundBuffer; // Graphics buffer for blurred background
 let currentHandLandmarks = null; // Stores the latest hand landmarks for visualization
@@ -16,8 +16,12 @@ let influenceRadius = 300; // Larger area of effect
 const repulsionStrength = 2.5; // How strongly the mouse pushes dots
 const springStiffness = 0.05; // How quickly dots return to position
 const damping = 0.85; // Easing for the spring motion
-const DOT_COLOR = '#00FF00'; // Vibrant Green
-const OPEN_HAND_DOT_COLOR = '#FFA500'; // Orange
+const GESTURE_COLORS = {
+  'default': '#00FF00',      // Green
+  'open': '#FFA500',         // Orange
+  'fist': '#FF00FF',         // Magenta
+  'pointing': '#00FFFF'      // Cyan
+};
 let dots = [];
 
 class Dot {
@@ -41,9 +45,12 @@ class Dot {
     let currentInfluenceRadius = influenceRadius;
     let currentRepulsionStrength = repulsionStrength;
 
-    if (isHandOpen) {
+    if (gesture === 'open') {
       currentInfluenceRadius *= 2.5;
       currentRepulsionStrength *= 3.5;
+    } else if (gesture === 'fist') {
+      currentInfluenceRadius *= 0.5;
+      currentRepulsionStrength *= 0.5;
     }
 
     // --- Floating effect ---
@@ -80,8 +87,8 @@ class Dot {
     this.diameter = map(distToOrigin, 0, influenceRadius / 2, maxDotDiameter, minDotDiameter);
     this.diameter = constrain(this.diameter, minDotDiameter, maxDotDiameter);
     
-    // --- Color change based on hand openness ---
-    let targetColor = isHandOpen ? color(OPEN_HAND_DOT_COLOR) : color(DOT_COLOR);
+    // --- Color change based on gesture ---
+    let targetColor = color(GESTURE_COLORS[gesture] || GESTURE_COLORS['default']);
     this.currentColor = lerpColor(this.currentColor, targetColor, 0.1);
   }
 
@@ -96,15 +103,23 @@ function onResults(results) {
     currentHandLandmarks = results.multiHandLandmarks[0];
     const landmarks = currentHandLandmarks;
     
-    // Calculate hand openness
-    const thumbTip = landmarks[4];
-    const pinkyTip = landmarks[20];
-    const handOpenness = dist(thumbTip.x, thumbTip.y, pinkyTip.x, pinkyTip.y);
-    
-    if (handOpenness > 0.4) {
-      isHandOpen = true;
+    // --- Gesture Detection ---
+    // This is a simplified gesture detection and works best with a relatively upright hand.
+    // It checks if the fingertip is higher (smaller y-coordinate) than a lower joint.
+    const isIndexExtended = landmarks[8].y < landmarks[6].y;
+    const isMiddleExtended = landmarks[12].y < landmarks[10].y;
+    const isRingExtended = landmarks[16].y < landmarks[14].y;
+    const isPinkyExtended = landmarks[20].y < landmarks[18].y;
+    const allFingersExtended = isIndexExtended && isMiddleExtended && isRingExtended && isPinkyExtended;
+
+    if (isIndexExtended && !isMiddleExtended && !isRingExtended && !isPinkyExtended) {
+      gesture = 'pointing';
+    } else if (allFingersExtended) {
+      gesture = 'open';
+    } else if (!isIndexExtended && !isMiddleExtended && !isRingExtended && !isPinkyExtended) {
+      gesture = 'fist';
     } else {
-      isHandOpen = false;
+      gesture = 'default';
     }
 
     // Use index finger tip (landmark 8) for interaction
@@ -117,7 +132,7 @@ function onResults(results) {
     handX = lerp(handX, targetX, lerpFactor);
     handY = lerp(handY, targetY, lerpFactor);
   } else {
-    isHandOpen = false;
+    gesture = 'default';
     currentHandLandmarks = null;
   }
 }
