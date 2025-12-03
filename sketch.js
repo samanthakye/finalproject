@@ -72,8 +72,8 @@ class Dot {
     this.vy *= damping;
 
     // Update position
-    this.x += this.vx;
-    this.y += this.vy;
+    // this.x += this.vx;
+    // this.y += this.vy;
     
     // --- Size based on distance to original position ---
     let distToOrigin = dist(this.x, this.y, this.originalX, this.originalY);
