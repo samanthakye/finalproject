@@ -33,7 +33,7 @@ class Dot {
     this.vx = 0; // Velocity x
     this.vy = 0; // Velocity y
     this.diameter = maxDotDiameter;
-    this.currentColor = color(DOT_COLOR); // Initialize with default color
+    this.currentColor = color(GESTURE_COLORS['default']); // Initialize with default color
   }
 
   update() {
@@ -79,8 +79,8 @@ class Dot {
     this.vy *= damping;
 
     // Update position
-    // this.x += this.vx;
-    // this.y += this.vy;
+    this.x += this.vx;
+    this.y += this.vy;
     
     // --- Size based on distance to original position ---
     let distToOrigin = dist(this.x, this.y, this.originalX, this.originalY);
