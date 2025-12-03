@@ -86,20 +86,8 @@ class Dot {
   }
 
   draw() {
-    // Calculate distance to hand to control visibility
-    let d = dist(this.x, this.y, handX, handY);
-    
-    // Map distance to alpha value for a "reveal" effect
-    let alpha = map(d, influenceRadius, influenceRadius / 2, 0, 255);
-    alpha = constrain(alpha, 0, 255);
-
-    if (alpha > 0) {
-      // Set the alpha of the dot's current color
-      this.currentColor.setAlpha(alpha);
-      
-      fill(this.currentColor);
-      ellipse(this.x, this.y, this.diameter, this.diameter);
-    }
+    fill(this.currentColor);
+    ellipse(this.x, this.y, this.diameter, this.diameter);
   }
 }
 
