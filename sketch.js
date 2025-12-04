@@ -8,6 +8,13 @@ let backgroundBuffer; // Graphics buffer for blurred background
 let currentHandLandmarks = null; // Stores the latest hand landmarks for visualization
 let mic, fft;
 
+// --- UNCOMFORTABLE AI ---
+let aiHandX, aiHandY;
+let aiNoiseX = 1000;
+let aiNoiseY = 2000;
+let userRepulsion;
+let aiRepulsion;
+
 // --- CONFIGURATION ---
 const spacing = 60; // Denser grid
 const maxDotDiameter = 30; // Slightly smaller max size
@@ -42,8 +49,12 @@ class Dot {
     let targetY = handY;
     let d = dist(this.x, this.y, targetX, targetY);
 
+    // --- AI Hand Interaction ---
+    let aiDist = dist(this.x, this.y, aiHandX, aiHandY);
+    let aiInfluenceRadius = 150;
+
     let currentInfluenceRadius = influenceRadius;
-    let currentRepulsionStrength = repulsionStrength;
+    let currentRepulsionStrength = userRepulsion;
 
     if (gesture === 'open') {
       currentInfluenceRadius *= 2.5;
@@ -64,6 +75,14 @@ class Dot {
     if (d < currentInfluenceRadius) {
       let angle = atan2(this.y - targetY, this.x - targetX);
       let force = map(d, 0, currentInfluenceRadius, currentRepulsionStrength, 0);
+      this.vx += cos(angle) * force;
+      this.vy += sin(angle) * force;
+    }
+
+    // --- Repulsion from AI hand ---
+    if (aiDist < aiInfluenceRadius) {
+      let angle = atan2(this.y - aiHandY, this.x - aiHandX);
+      let force = map(aiDist, 0, aiInfluenceRadius, aiRepulsion, 0);
       this.vx += cos(angle) * force;
       this.vy += sin(angle) * force;
     }
@@ -104,22 +123,29 @@ function onResults(results) {
     const landmarks = currentHandLandmarks;
     
     // --- Gesture Detection ---
-    // This is a simplified gesture detection and works best with a relatively upright hand.
-    // It checks if the fingertip is higher (smaller y-coordinate) than a lower joint.
     const isIndexExtended = landmarks[8].y < landmarks[6].y;
     const isMiddleExtended = landmarks[12].y < landmarks[10].y;
     const isRingExtended = landmarks[16].y < landmarks[14].y;
     const isPinkyExtended = landmarks[20].y < landmarks[18].y;
     const allFingersExtended = isIndexExtended && isMiddleExtended && isRingExtended && isPinkyExtended;
 
+    let currentGesture;
     if (isIndexExtended && !isMiddleExtended && !isRingExtended && !isPinkyExtended) {
-      gesture = 'pointing';
+      currentGesture = 'pointing';
     } else if (allFingersExtended) {
-      gesture = 'open';
+      currentGesture = 'open';
     } else if (!isIndexExtended && !isMiddleExtended && !isRingExtended && !isPinkyExtended) {
-      gesture = 'fist';
+      currentGesture = 'fist';
     } else {
-      gesture = 'default';
+      currentGesture = 'default';
+    }
+
+    // --- Unreliable Gesture ---
+    if (frameCount % 100 < 10) { // Occasionally glitch
+      let gestures = Object.keys(GESTURE_COLORS);
+      gesture = random(gestures);
+    } else {
+      gesture = currentGesture;
     }
 
     // Use index finger tip (landmark 8) for interaction
@@ -145,6 +171,11 @@ function setup() {
   // Set initial interaction point to center of screen
   handX = width / 2;
   handY = height / 2;
+  aiHandX = width / 2;
+  aiHandY = height / 2;
+
+  userRepulsion = repulsionStrength;
+  aiRepulsion = 1.5;
 
   createGrid();
 
@@ -231,11 +262,32 @@ function drawHandLandmarks() {
 }
 
 function draw() {
+    // --- AI Hand Movement ---
+  aiNoiseX += 0.005;
+  aiNoiseY += 0.005;
+  aiHandX = noise(aiNoiseX) * width;
+  aiHandY = noise(aiNoiseY) * height;
+
+  // --- Progressive Loss of Control ---
+  // Over time, user has less control, and AI has more.
+  // This happens over 30 seconds (1800 frames at 60fps)
+  let controlShift = constrain(frameCount / 1800, 0, 1);
+  userRepulsion = lerp(repulsionStrength, 0, controlShift);
+  aiRepulsion = lerp(1.5, 4, controlShift);
+  lerpFactor = lerp(0.05, 0.005, controlShift);
+
+
   // Map microphone volume to influence radius
   let volume = mic.getLevel();
   // Map volume (0-1) to a larger radius. Use 0.3 as a high water mark for sensitivity.
   influenceRadius = map(volume, 0, 0.3, 150, 600);
   influenceRadius = constrain(influenceRadius, 150, 600);
+
+  // --- Audio Hallucination ---
+  if (frameCount % 200 < 5) { // Occasionally pulse
+    influenceRadius = 600;
+  }
+
 
   background(0); // Clear main canvas
 
