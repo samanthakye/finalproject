@@ -1,11 +1,8 @@
 // --- HAND TRACKING & MEDIAPIPE ---
-let handX = 0; // X-coordinate for interaction
-let handY = 0; // Y-coordinate for interaction
+let hands = []; // Array to store hand data (landmarks, position, gesture)
 let lerpFactor = 0.05; // Smoothing factor for hand movement
-let gesture = 'default';
 let video;
 let backgroundBuffer; // Graphics buffer for blurred background
-let currentHandLandmarks = null; // Stores the latest hand landmarks for visualization
 let mic, fft;
 
 // --- UNCOMFORTABLE AI ---
@@ -44,25 +41,9 @@ class Dot {
   }
 
   update() {
-    // Use smoothed handX/handY for interaction
-    let targetX = handX;
-    let targetY = handY;
-    let d = dist(this.x, this.y, targetX, targetY);
-
     // --- AI Hand Interaction ---
     let aiDist = dist(this.x, this.y, aiHandX, aiHandY);
     let aiInfluenceRadius = 150;
-
-    let currentInfluenceRadius = influenceRadius;
-    let currentRepulsionStrength = userRepulsion;
-
-    if (gesture === 'open') {
-      currentInfluenceRadius *= 2.5;
-      currentRepulsionStrength *= 3.5;
-    } else if (gesture === 'fist') {
-      currentInfluenceRadius *= 0.5;
-      currentRepulsionStrength *= 0.5;
-    }
 
     // --- Floating effect ---
     let noiseFactor = 0.005;
@@ -71,12 +52,35 @@ class Dot {
     this.vx += cos(noiseAngle) * noiseForce;
     this.vy += sin(noiseAngle) * noiseForce;
 
-    // --- Repulsion from mouse/hand ---
-    if (d < currentInfluenceRadius) {
-      let angle = atan2(this.y - targetY, this.x - targetX);
-      let force = map(d, 0, currentInfluenceRadius, currentRepulsionStrength, 0);
-      this.vx += cos(angle) * force;
-      this.vy += sin(angle) * force;
+    let closestHandGesture = 'default';
+    let minHandDist = Infinity;
+
+    // --- Repulsion from hands ---
+    for (const hand of hands) {
+      let d = dist(this.x, this.y, hand.x, hand.y);
+
+      if (d < minHandDist) {
+        minHandDist = d;
+        closestHandGesture = hand.gesture;
+      }
+      
+      let currentInfluenceRadius = influenceRadius;
+      let currentRepulsionStrength = userRepulsion;
+
+      if (hand.gesture === 'open') {
+        currentInfluenceRadius *= 2.5;
+        currentRepulsionStrength *= 3.5;
+      } else if (hand.gesture === 'fist') {
+        currentInfluenceRadius *= 0.5;
+        currentRepulsionStrength *= 0.5;
+      }
+      
+      if (d < currentInfluenceRadius) {
+        let angle = atan2(this.y - hand.y, this.x - hand.x);
+        let force = map(d, 0, currentInfluenceRadius, currentRepulsionStrength, 0);
+        this.vx += cos(angle) * force;
+        this.vy += sin(angle) * force;
+      }
     }
 
     // --- Repulsion from AI hand ---
@@ -106,8 +110,8 @@ class Dot {
     this.diameter = map(distToOrigin, 0, influenceRadius / 2, maxDotDiameter, minDotDiameter);
     this.diameter = constrain(this.diameter, minDotDiameter, maxDotDiameter);
     
-    // --- Color change based on gesture ---
-    let targetColor = color(GESTURE_COLORS[gesture] || GESTURE_COLORS['default']);
+    // --- Color change based on the closest hand's gesture ---
+    let targetColor = color(GESTURE_COLORS[closestHandGesture] || GESTURE_COLORS['default']);
     this.currentColor = lerpColor(this.currentColor, targetColor, 0.1);
   }
 
@@ -118,48 +122,50 @@ class Dot {
 }
 
 function onResults(results) {
+  hands = []; // Clear the hands array each frame
   if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-    currentHandLandmarks = results.multiHandLandmarks[0];
-    const landmarks = currentHandLandmarks;
-    
-    // --- Gesture Detection ---
-    const isIndexExtended = landmarks[8].y < landmarks[6].y;
-    const isMiddleExtended = landmarks[12].y < landmarks[10].y;
-    const isRingExtended = landmarks[16].y < landmarks[14].y;
-    const isPinkyExtended = landmarks[20].y < landmarks[18].y;
-    const allFingersExtended = isIndexExtended && isMiddleExtended && isRingExtended && isPinkyExtended;
+    for (let i = 0; i < results.multiHandLandmarks.length; i++) {
+      const landmarks = results.multiHandLandmarks[i];
+      
+      // --- Gesture Detection ---
+      const isIndexExtended = landmarks[8].y < landmarks[6].y;
+      const isMiddleExtended = landmarks[12].y < landmarks[10].y;
+      const isRingExtended = landmarks[16].y < landmarks[14].y;
+      const isPinkyExtended = landmarks[20].y < landmarks[18].y;
+      const allFingersExtended = isIndexExtended && isMiddleExtended && isRingExtended && isPinkyExtended;
 
-    let currentGesture;
-    if (isIndexExtended && !isMiddleExtended && !isRingExtended && !isPinkyExtended) {
-      currentGesture = 'pointing';
-    } else if (allFingersExtended) {
-      currentGesture = 'open';
-    } else if (!isIndexExtended && !isMiddleExtended && !isRingExtended && !isPinkyExtended) {
-      currentGesture = 'fist';
-    } else {
-      currentGesture = 'default';
+      let currentGesture;
+      if (isIndexExtended && !isMiddleExtended && !isRingExtended && !isPinkyExtended) {
+        currentGesture = 'pointing';
+      } else if (allFingersExtended) {
+        currentGesture = 'open';
+      } else if (!isIndexExtended && !isMiddleExtended && !isRingExtended && !isPinkyExtended) {
+        currentGesture = 'fist';
+      } else {
+        currentGesture = 'default';
+      }
+      
+      // Use index finger tip (landmark 8) for interaction
+      const keypoint = landmarks[8];
+      // Convert normalized coordinates to pixel coordinates
+      let targetX = keypoint.x * width;
+      let targetY = keypoint.y * height;
+
+      // Find if this hand already exists to smooth its movement
+      let existingHand = hands[i];
+      if (!existingHand) {
+        existingHand = { x: targetX, y: targetY };
+      }
+
+      // Smooth the interaction point using lerp
+      let handData = {
+        landmarks: landmarks,
+        x: lerp(existingHand.x, targetX, lerpFactor),
+        y: lerp(existingHand.y, targetY, lerpFactor),
+        gesture: currentGesture
+      };
+      hands[i] = handData;
     }
-
-    // --- Unreliable Gesture ---
-    if (frameCount % 100 < 10) { // Occasionally glitch
-      let gestures = Object.keys(GESTURE_COLORS);
-      gesture = random(gestures);
-    } else {
-      gesture = currentGesture;
-    }
-
-    // Use index finger tip (landmark 8) for interaction
-    const keypoint = landmarks[8];
-    // Convert normalized coordinates to pixel coordinates
-    let targetX = keypoint.x * width;
-    let targetY = keypoint.y * height;
-
-    // Smooth the interaction point using lerp
-    handX = lerp(handX, targetX, lerpFactor);
-    handY = lerp(handY, targetY, lerpFactor);
-  } else {
-    gesture = 'default';
-    currentHandLandmarks = null;
   }
 }
 
@@ -168,9 +174,7 @@ function setup() {
   noStroke();
   noCursor();
 
-  // Set initial interaction point to center of screen
-  handX = width / 2;
-  handY = height / 2;
+  // Set initial AI hand position
   aiHandX = width / 2;
   aiHandY = height / 2;
 
@@ -191,7 +195,7 @@ function setup() {
   });
 
   hands.setOptions({
-    maxNumHands: 1,
+    maxNumHands: 2,
     modelComplexity: 0,
     minDetectionConfidence: 0.5,
     minTrackingConfidence: 0.5
@@ -233,30 +237,32 @@ function createGrid() {
 }
 
 function drawHandLandmarks() {
-  if (currentHandLandmarks) {
-    const connections = [
-      [0, 1], [1, 2], [2, 3], [3, 4], // Thumb
-      [0, 5], [5, 6], [6, 7], [7, 8], // Index finger
-      [9, 10], [10, 11], [11, 12], // Middle finger (connecting to palm via 0)
-      [0, 13], [13, 14], [14, 15], [15, 16], // Ring finger
-      [0, 17], [17, 18], [18, 19], [19, 20], // Pinky finger
-      [5, 9], [9, 13], [13, 17] // Palm base connections
-    ];
+  for (const hand of hands) {
+    if (hand.landmarks) {
+      const connections = [
+        [0, 1], [1, 2], [2, 3], [3, 4], // Thumb
+        [0, 5], [5, 6], [6, 7], [7, 8], // Index finger
+        [9, 10], [10, 11], [11, 12], // Middle finger (connecting to palm via 0)
+        [0, 13], [13, 14], [14, 15], [15, 16], // Ring finger
+        [0, 17], [17, 18], [18, 19], [19, 20], // Pinky finger
+        [5, 9], [9, 13], [13, 17] // Palm base connections
+      ];
 
-    // Draw connections
-    stroke(255, 0, 0); // Red lines
-    strokeWeight(2);
-    for (let connection of connections) {
-      const p1 = currentHandLandmarks[connection[0]];
-      const p2 = currentHandLandmarks[connection[1]];
-      line(p1.x * width, p1.y * height, p2.x * width, p2.y * height);
-    }
+      // Draw connections
+      stroke(255, 0, 0); // Red lines
+      strokeWeight(2);
+      for (let connection of connections) {
+        const p1 = hand.landmarks[connection[0]];
+        const p2 = hand.landmarks[connection[1]];
+        line(p1.x * width, p1.y * height, p2.x * width, p2.y * height);
+      }
 
-    // Draw landmarks
-    noStroke();
-    fill(0, 255, 0); // Green dots
-    for (let landmark of currentHandLandmarks) {
-      ellipse(landmark.x * width, landmark.y * height, 10, 10);
+      // Draw landmarks
+      noStroke();
+      fill(0, 255, 0); // Green dots
+      for (let landmark of hand.landmarks) {
+        ellipse(landmark.x * width, landmark.y * height, 10, 10);
+      }
     }
   }
 }
@@ -319,10 +325,6 @@ function draw() {
     dot.draw();
   }
   pop(); // Restore the original state
-  
-  // Optional: Draw a circle at the interaction point for debugging
-  // fill(255, 0, 0, 100);
-  // ellipse(handX, handY, 30, 30);
 }
 
 function windowResized() {
