@@ -37,6 +37,7 @@ class Dot {
     this.currentDiameter = this.targetDiameter;
     this.targetShade = FINGER_VISUALS_MAP['default'].shade;
     this.currentShade = this.targetShade;
+    this.isAlive = true; // Property to track if the dot should be removed
   }
 
   update() {
@@ -50,7 +51,7 @@ class Dot {
     let closestHandGesture = 'default';
     let minHandDist = Infinity;
 
-    // --- Repulsion from hands ---
+    // --- Repulsion / Attraction from hands ---
     for (const hand of hands) {
       let d = dist(this.x, this.y, hand.x, hand.y);
 
@@ -60,21 +61,26 @@ class Dot {
       }
       
       let currentInfluenceRadius = influenceRadius;
-      let currentRepulsionStrength = repulsionStrength;
+      let interactionStrength = repulsionStrength;
 
       if (hand.gesture === '5') { // Open hand
         currentInfluenceRadius *= 2.5;
-        currentRepulsionStrength *= 3.5;
-      } else if (hand.gesture === '0') { // Fist
-        currentInfluenceRadius *= 0.5;
-        currentRepulsionStrength *= 0.5;
+        interactionStrength *= 3.5;
+      } else if (hand.gesture === '0') { // Fist (Black Hole)
+        currentInfluenceRadius *= 1.5; // Black holes have a strong pull
+        interactionStrength *= -2; // Negative force for attraction
       }
       
       if (d < currentInfluenceRadius) {
         let angle = atan2(this.y - hand.y, this.x - hand.x);
-        let force = map(d, 0, currentInfluenceRadius, currentRepulsionStrength, 0);
+        let force = map(d, 0, currentInfluenceRadius, interactionStrength, 0);
         this.vx += cos(angle) * force;
         this.vy += sin(angle) * force;
+      }
+      
+      // --- Destruction by Black Hole ---
+      if (hand.gesture === '0' && d < 10) {
+          this.isAlive = false;
       }
     }
 
@@ -107,6 +113,7 @@ class Dot {
   }
 
   draw() {
+    if (!this.isAlive) return; // Don't draw if not alive
     fill(this.currentShade);
     ellipse(this.x, this.y, this.currentDiameter, this.currentDiameter);
   }
@@ -247,6 +254,15 @@ function drawHandLandmarks() {
 }
 
 function draw() {
+  // --- Creator Mode ---
+  for (const hand of hands) {
+    // With an open hand, have a chance to spawn new dots
+    if (hand.gesture === '5' && random(1) < 0.2) {
+      // Create a new dot at the hand's position (mirrored)
+      dots.push(new Dot(width - hand.x, hand.y));
+    }
+  }
+
   // Map microphone volume to influence radius
   let volume = mic.getLevel();
   // Map volume (0-1) to a larger radius. Use 0.3 as a high water mark for sensitivity.
@@ -270,6 +286,9 @@ function draw() {
     dot.update();
     dot.draw();
   }
+  
+  // Remove dots that have been "destroyed" by a black hole
+  dots = dots.filter(dot => dot.isAlive);
 
   drawHandLandmarks(); // Draw the hand skeleton on top of the dots
 
