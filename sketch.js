@@ -4,13 +4,6 @@ let lerpFactor = 0.05; // Smoothing factor for hand movement
 let video;
 let mic, fft;
 
-// --- UNCOMFORTABLE AI ---
-let aiHandX, aiHandY;
-let aiNoiseX = 1000;
-let aiNoiseY = 2000;
-let userRepulsion;
-let aiRepulsion;
-
 // --- CONFIGURATION ---
 const spacing = 60; // Denser grid
 const maxDotDiameter = 30; // Slightly smaller max size
@@ -40,10 +33,6 @@ class Dot {
   }
 
   update() {
-    // --- AI Hand Interaction ---
-    let aiDist = dist(this.x, this.y, aiHandX, aiHandY);
-    let aiInfluenceRadius = 150;
-
     // --- Floating effect ---
     let noiseFactor = 0.005;
     let noiseAngle = noise(this.x * noiseFactor, this.y * noiseFactor, frameCount * 0.01) * TWO_PI;
@@ -64,7 +53,7 @@ class Dot {
       }
       
       let currentInfluenceRadius = influenceRadius;
-      let currentRepulsionStrength = userRepulsion;
+      let currentRepulsionStrength = repulsionStrength;
 
       if (hand.gesture === 'open') {
         currentInfluenceRadius *= 2.5;
@@ -80,14 +69,6 @@ class Dot {
         this.vx += cos(angle) * force;
         this.vy += sin(angle) * force;
       }
-    }
-
-    // --- Repulsion from AI hand ---
-    if (aiDist < aiInfluenceRadius) {
-      let angle = atan2(this.y - aiHandY, this.x - aiHandX);
-      let force = map(aiDist, 0, aiInfluenceRadius, aiRepulsion, 0);
-      this.vx += cos(angle) * force;
-      this.vy += sin(angle) * force;
     }
 
     // --- Spring back to origin ---
@@ -172,13 +153,6 @@ function setup() {
   createCanvas(windowWidth, windowHeight);
   noStroke();
   noCursor();
-
-  // Set initial AI hand position
-  aiHandX = width / 2;
-  aiHandY = height / 2;
-
-  userRepulsion = repulsionStrength;
-  aiRepulsion = 1.5;
 
   createGrid();
 
@@ -265,21 +239,6 @@ function drawHandLandmarks() {
 }
 
 function draw() {
-    // --- AI Hand Movement ---
-  aiNoiseX += 0.005;
-  aiNoiseY += 0.005;
-  aiHandX = noise(aiNoiseX) * width;
-  aiHandY = noise(aiNoiseY) * height;
-
-  // --- Progressive Loss of Control ---
-  // Over time, user has less control, and AI has more.
-  // This happens over 30 seconds (1800 frames at 60fps)
-  let controlShift = constrain(frameCount / 1800, 0, 1);
-  userRepulsion = lerp(repulsionStrength, 0, controlShift);
-  aiRepulsion = lerp(1.5, 4, controlShift);
-  lerpFactor = lerp(0.05, 0.005, controlShift);
-
-
   // Map microphone volume to influence radius
   let volume = mic.getLevel();
   // Map volume (0-1) to a larger radius. Use 0.3 as a high water mark for sensitivity.
