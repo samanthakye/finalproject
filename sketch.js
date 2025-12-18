@@ -61,11 +61,6 @@ class Dot {
       
       let currentInfluenceRadius = influenceRadius;
       let interactionStrength = repulsionStrength;
-
-      if (hand.gesture === '0') { // Fist
-        currentInfluenceRadius *= 0.5; // Still a smaller influence radius
-        interactionStrength = repulsionStrength; // Standard repulsion strength
-      }
       
       if (d < currentInfluenceRadius) {
         let angle = atan2(this.y - hand.y, this.x - hand.x);
@@ -104,7 +99,6 @@ class Dot {
   }
 
   draw() {
-    if (!this.isAlive) return; // Don't draw if not alive
     fill(this.currentShade);
     ellipse(this.x, this.y, this.currentDiameter, this.currentDiameter);
   }
@@ -260,19 +254,12 @@ function drawStartScreen() {
 
   // --- Controls Key ---
   textSize(16);
-  textAlign(LEFT, TOP);
   // Using an array and join to avoid indentation issues with template literals
   const keyText = [
     'Hand Pose Controls:',
     '',
-    '[ 0 Fingers (Fist) ]',
-    'Black Hole: Attracts and destroys dots.',
-    '',
-    '[ 1-4 Fingers ]',
-    'Interact: Changes dot size and brightness.',
-    '',
-    '[ 5 Fingers (Open Hand) ]',
-    'Creator: Spawns new dots.'
+    'Hold up different numbers of fingers',
+    'to change the size and brightness of the dots.',
   ].join('\n');
   
   textAlign(CENTER, CENTER);
@@ -288,15 +275,6 @@ function drawStartScreen() {
 
 function runSimulation() {
   noCursor(); // Hide cursor during simulation
-  // --- Creator Mode ---
-  for (const hand of hands) {
-    // With an open hand, have a chance to spawn new dots
-    if (hand.gesture === '5' && random(1) < 0.2) {
-      // Create a new dot at the hand's position (mirrored)
-      dots.push(new Dot(width - hand.x, hand.y));
-    }
-  }
-
   // Map microphone volume to influence radius
   let volume = mic.getLevel();
   // Map volume (0-1) to a larger radius. Use 0.3 as a high water mark for sensitivity.
