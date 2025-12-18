@@ -294,8 +294,23 @@ function draw() {
 
   background(0); // Solid black background
 
+  // Draw the dots first, applying the mirroring transformations
+  push(); // Save the state before dot mirroring
+  translate(width, 0);
+  scale(-1, 1);
+
+  // Update and draw all dots
+  for (let dot of dots) {
+    dot.update();
+    dot.draw();
+  }
+
+  drawHandLandmarks(); // Draw the hand skeleton on top of the dots
+
+  pop(); // Restore the original state
+
   if (video) {
-    // Draw webcam feed in upper left corner, mirrored
+    // Draw webcam feed in upper left corner, mirrored, on top of everything
     let webcamW = 160;
     let webcamH = 120;
     push();
@@ -304,21 +319,6 @@ function draw() {
     image(video, 0, 0, webcamW, webcamH);
     pop();
   }
-
-  // Now, draw the dots. These should also be mirrored.
-  // So, apply the mirroring transformations to the main canvas before drawing dots.
-  push(); // Save the state before dot mirroring
-  translate(width, 0);
-  scale(-1, 1);
-
-  drawHandLandmarks(); // Draw the hand skeleton
-
-  // Update and draw all dots
-  for (let dot of dots) {
-    dot.update();
-    dot.draw();
-  }
-  pop(); // Restore the original state
 }
 
 function windowResized() {
