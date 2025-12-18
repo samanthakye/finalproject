@@ -321,8 +321,6 @@ function runSimulation() {
     dot.draw();
   }
 
-  drawHandLandmarks(); // Draw the hand skeleton on top of the dots
-
   pop(); // Restore the original state
 
   if (video) {
