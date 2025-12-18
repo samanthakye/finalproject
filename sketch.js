@@ -37,7 +37,6 @@ class Dot {
     this.currentDiameter = this.targetDiameter;
     this.targetShade = FINGER_VISUALS_MAP['default'].shade;
     this.currentShade = this.targetShade;
-    this.isAlive = true; // Property to track if the dot should be removed
   }
 
   update() {
@@ -63,9 +62,9 @@ class Dot {
       let currentInfluenceRadius = influenceRadius;
       let interactionStrength = repulsionStrength;
 
-      if (hand.gesture === '0') { // Fist (Black Hole)
-        currentInfluenceRadius *= 1.5; // Black holes have a strong pull
-        interactionStrength *= -2; // Negative force for attraction
+      if (hand.gesture === '0') { // Fist
+        currentInfluenceRadius *= 0.5; // Still a smaller influence radius
+        interactionStrength = repulsionStrength; // Standard repulsion strength
       }
       
       if (d < currentInfluenceRadius) {
@@ -73,11 +72,6 @@ class Dot {
         let force = map(d, 0, currentInfluenceRadius, interactionStrength, 0);
         this.vx += cos(angle) * force;
         this.vy += sin(angle) * force;
-      }
-      
-      // --- Destruction by Black Hole ---
-      if (hand.gesture === '0' && d < 10) {
-          this.isAlive = false;
       }
     }
 
@@ -326,9 +320,6 @@ function runSimulation() {
     dot.update();
     dot.draw();
   }
-  
-  // Remove dots that have been "destroyed" by a black hole
-  dots = dots.filter(dot => dot.isAlive);
 
   drawHandLandmarks(); // Draw the hand skeleton on top of the dots
 
