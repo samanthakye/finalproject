@@ -63,10 +63,7 @@ class Dot {
       let currentInfluenceRadius = influenceRadius;
       let interactionStrength = repulsionStrength;
 
-      if (hand.gesture === '5') { // Open hand
-        currentInfluenceRadius *= 2.5;
-        interactionStrength *= 3.5;
-      } else if (hand.gesture === '0') { // Fist (Black Hole)
+      if (hand.gesture === '0') { // Fist (Black Hole)
         currentInfluenceRadius *= 1.5; // Black holes have a strong pull
         interactionStrength *= -2; // Negative force for attraction
       }
