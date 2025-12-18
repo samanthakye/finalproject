@@ -13,10 +13,13 @@ const repulsionStrength = 2.5; // How strongly the mouse pushes dots
 const springStiffness = 0.05; // How quickly dots return to position
 const damping = 0.85; // Easing for the spring motion
 const GESTURE_COLORS = {
-  'default': '#00FF00',      // Green
-  'open': '#FFA500',         // Orange
-  'fist': '#FF00FF',         // Magenta
-  'pointing': '#00FFFF'      // Cyan
+  'default': '#FFFFFF',      // White
+  '0': '#FF0000',            // 0 fingers (fist) - Red
+  '1': '#FF7F00',            // 1 finger - Orange
+  '2': '#FFFF00',            // 2 fingers - Yellow
+  '3': '#00FF00',            // 3 fingers - Green
+  '4': '#0000FF',            // 4 fingers - Blue
+  '5': '#8B00FF'             // 5 fingers (open) - Violet
 };
 let dots = [];
 
@@ -55,10 +58,10 @@ class Dot {
       let currentInfluenceRadius = influenceRadius;
       let currentRepulsionStrength = repulsionStrength;
 
-      if (hand.gesture === 'open') {
+      if (hand.gesture === '5') { // Open hand
         currentInfluenceRadius *= 2.5;
         currentRepulsionStrength *= 3.5;
-      } else if (hand.gesture === 'fist') {
+      } else if (hand.gesture === '0') { // Fist
         currentInfluenceRadius *= 0.5;
         currentRepulsionStrength *= 0.5;
       }
@@ -107,25 +110,22 @@ function onResults(results) {
     for (let i = 0; i < results.multiHandLandmarks.length; i++) {
       const landmarks = results.multiHandLandmarks[i];
       
-      // --- Gesture Detection ---
-      const isIndexExtended = landmarks[8].y < landmarks[6].y;
-      const isMiddleExtended = landmarks[12].y < landmarks[10].y;
-      const isRingExtended = landmarks[16].y < landmarks[14].y;
-      const isPinkyExtended = landmarks[20].y < landmarks[18].y;
-      const allFingersExtended = isIndexExtended && isMiddleExtended && isRingExtended && isPinkyExtended;
-
-      let currentGesture;
-      if (isIndexExtended && !isMiddleExtended && !isRingExtended && !isPinkyExtended) {
-        currentGesture = 'pointing';
-      } else if (allFingersExtended) {
-        currentGesture = 'open';
-      } else if (!isIndexExtended && !isMiddleExtended && !isRingExtended && !isPinkyExtended) {
-        currentGesture = 'fist';
-      } else {
-        currentGesture = 'default';
-      }
+      // --- Finger Counting Gesture Detection ---
+      let extendedFingers = 0;
+      // Landmark indices for fingertips and their base (MCP) joints
+      const fingerTips = [4, 8, 12, 16, 20];
+      const fingerMcps = [2, 5, 9, 13, 17];
       
-      // Use index finger tip (landmark 8) for interaction
+      // A simple heuristic: check if the fingertip is "higher" (lower y-value) than its base joint.
+      // This works reasonably well for a mostly upright hand.
+      for (let j = 0; j < fingerTips.length; j++) {
+        if (landmarks[fingerTips[j]].y < landmarks[fingerMcps[j]].y) {
+          extendedFingers++;
+        }
+      }
+      let currentGesture = extendedFingers.toString();
+      
+      // Use index finger tip (landmark 8) for interaction point, regardless of gesture
       const keypoint = landmarks[8];
       // Convert normalized coordinates to pixel coordinates
       let targetX = keypoint.x * width;
