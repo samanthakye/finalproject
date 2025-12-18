@@ -6,20 +6,22 @@ let mic, fft;
 
 // --- CONFIGURATION ---
 const spacing = 60; // Denser grid
-const maxDotDiameter = 30; // Slightly smaller max size
-const minDotDiameter = 3; // Slightly smaller min size
+const maxDotSizeBase = 30; // Base for largest dot size
+const minDotSizeBase = 3; // Base for smallest dot size
 let influenceRadius = 300; // Larger area of effect
 const repulsionStrength = 2.5; // How strongly the mouse pushes dots
 const springStiffness = 0.05; // How quickly dots return to position
 const damping = 0.85; // Easing for the spring motion
-const GESTURE_COLORS = {
-  'default': '#FFFFFF',      // White
-  '0': '#FF0000',            // 0 fingers (fist) - Red
-  '1': '#FF7F00',            // 1 finger - Orange
-  '2': '#FFFF00',            // 2 fingers - Yellow
-  '3': '#00FF00',            // 3 fingers - Green
-  '4': '#0000FF',            // 4 fingers - Blue
-  '5': '#8B00FF'             // 5 fingers (open) - Violet
+
+// Map finger count to visual properties (size and shade)
+const FINGER_VISUALS_MAP = {
+  'default': { sizeFactor: 0.5, shade: 100 }, // Default when no hand is detected
+  '0': { sizeFactor: 0.2, shade: 50 }, // Fist: small, dark
+  '1': { sizeFactor: 0.4, shade: 100 },
+  '2': { sizeFactor: 0.6, shade: 150 },
+  '3': { sizeFactor: 0.8, shade: 200 },
+  '4': { sizeFactor: 1.0, shade: 220 },
+  '5': { sizeFactor: 1.2, shade: 255 } // Open hand: large, bright (can exceed maxDotSizeBase)
 };
 let dots = [];
 
@@ -31,8 +33,10 @@ class Dot {
     this.y = y;
     this.vx = 0; // Velocity x
     this.vy = 0; // Velocity y
-    this.diameter = maxDotDiameter;
-    this.currentColor = color(GESTURE_COLORS['default']); // Initialize with default color
+    this.targetDiameter = maxDotSizeBase * FINGER_VISUALS_MAP['default'].sizeFactor;
+    this.currentDiameter = this.targetDiameter;
+    this.targetShade = FINGER_VISUALS_MAP['default'].shade;
+    this.currentShade = this.targetShade;
   }
 
   update() {
@@ -88,19 +92,23 @@ class Dot {
     this.x += this.vx;
     this.y += this.vy;
     
-    // --- Size based on distance to original position ---
+    // --- Size and Shade based on closest hand's gesture ---
+    const visualProps = FINGER_VISUALS_MAP[closestHandGesture] || FINGER_VISUALS_MAP['default'];
+    this.targetDiameter = maxDotSizeBase * visualProps.sizeFactor;
+    this.targetShade = visualProps.shade;
+
+    this.currentDiameter = lerp(this.currentDiameter, this.targetDiameter, 0.1);
+    this.currentShade = lerp(this.currentShade, this.targetShade, 0.1);
+
+    // Further scale diameter based on distance to original position
     let distToOrigin = dist(this.x, this.y, this.originalX, this.originalY);
-    this.diameter = map(distToOrigin, 0, influenceRadius / 2, maxDotDiameter, minDotDiameter);
-    this.diameter = constrain(this.diameter, minDotDiameter, maxDotDiameter);
-    
-    // --- Color change based on the closest hand's gesture ---
-    let targetColor = color(GESTURE_COLORS[closestHandGesture] || GESTURE_COLORS['default']);
-    this.currentColor = lerpColor(this.currentColor, targetColor, 0.1);
+    let scaledDiameter = map(distToOrigin, 0, influenceRadius / 2, this.currentDiameter, minDotSizeBase);
+    this.currentDiameter = constrain(scaledDiameter, minDotSizeBase, this.currentDiameter);
   }
 
   draw() {
-    fill(this.currentColor);
-    ellipse(this.x, this.y, this.diameter, this.diameter);
+    fill(this.currentShade);
+    ellipse(this.x, this.y, this.currentDiameter, this.currentDiameter);
   }
 }
 
