@@ -2,7 +2,6 @@
 let hands = []; // Array to store hand data (landmarks, position, gesture)
 let lerpFactor = 0.05; // Smoothing factor for hand movement
 let video;
-let backgroundBuffer; // Graphics buffer for blurred background
 let mic, fft;
 
 // --- UNCOMFORTABLE AI ---
@@ -183,8 +182,6 @@ function setup() {
 
   createGrid();
 
-  backgroundBuffer = createGraphics(windowWidth, windowHeight);
-
   video = createCapture(VIDEO);
   video.size(640, 480);
   video.hide();
@@ -295,20 +292,17 @@ function draw() {
   }
 
 
-  background(0); // Clear main canvas
+  background(0); // Solid black background
 
   if (video) {
-    // Draw video onto buffer, mirrored
-    backgroundBuffer.clear();
-    backgroundBuffer.push();
-    backgroundBuffer.translate(backgroundBuffer.width, 0);
-    backgroundBuffer.scale(-1, 1);
-    backgroundBuffer.image(video, 0, 0, backgroundBuffer.width, backgroundBuffer.height);
-    backgroundBuffer.pop();
-
-    backgroundBuffer.filter(BLUR, 5); // Blur the buffer
-
-    image(backgroundBuffer, 0, 0); // Draw blurred buffer to main canvas
+    // Draw webcam feed in upper left corner, mirrored
+    let webcamW = 160;
+    let webcamH = 120;
+    push();
+    translate(webcamW, 0); // Move to the right edge of the video rectangle
+    scale(-1, 1); // Flip horizontally
+    image(video, 0, 0, webcamW, webcamH);
+    pop();
   }
 
   // Now, draw the dots. These should also be mirrored.
@@ -329,9 +323,6 @@ function draw() {
 
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
-  if (backgroundBuffer) {
-    backgroundBuffer.resizeCanvas(windowWidth, windowHeight);
-  }
   dots = [];
   createGrid();
 }
