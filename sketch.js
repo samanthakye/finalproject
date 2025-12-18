@@ -251,10 +251,7 @@ function draw() {
   }
 
 
-  // Fading trail effect: draw a semi-transparent rectangle over the canvas
-  noStroke();
-  fill(0, 10); // Black with 10/255 opacity
-  rect(0, 0, width, height);
+  background(0); // Solid black background
 
   // Draw the dots first, applying the mirroring transformations
   push(); // Save the state before dot mirroring
