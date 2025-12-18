@@ -3,6 +3,9 @@ let hands = []; // Array to store hand data (landmarks, position, gesture)
 let lerpFactor = 0.05; // Smoothing factor for hand movement
 let video;
 let mic, fft;
+let wasClappingLastFrame = false;
+let clapCenter = null;
+let clapStrength = 0;
 
 // --- CONFIGURATION ---
 const spacing = 60; // Denser grid
@@ -69,6 +72,19 @@ class Dot {
       if (d < currentInfluenceRadius) {
         let angle = atan2(this.y - hand.y, this.x - hand.x);
         let force = map(d, 0, currentInfluenceRadius, currentRepulsionStrength, 0);
+        this.vx += cos(angle) * force;
+        this.vy += sin(angle) * force;
+      }
+    }
+
+    // --- Shockwave from Clap ---
+    if (clapStrength > 0 && clapCenter) {
+      const d = dist(this.x, this.y, clapCenter.x, clapCenter.y);
+      const shockwaveRadius = 800; // How far the shockwave reaches
+      if (d < shockwaveRadius) {
+        const angle = atan2(this.y - clapCenter.y, this.x - clapCenter.x);
+        // The force is strongest at the center and weakens over distance
+        const force = map(d, 0, shockwaveRadius, clapStrength, 0);
         this.vx += cos(angle) * force;
         this.vy += sin(angle) * force;
       }
@@ -239,6 +255,37 @@ function drawHandLandmarks() {
 }
 
 function draw() {
+  // --- Clap Gesture Detection ---
+  if (hands.length === 2) {
+    const hand1Palm = hands[0].landmarks[9];
+    const hand2Palm = hands[1].landmarks[9];
+    const palmDist = dist(hand1Palm.x * width, hand1Palm.y * height, hand2Palm.x * width, hand2Palm.y * height);
+
+    const clapThreshold = 50; // pixels
+    if (palmDist < clapThreshold && !wasClappingLastFrame) {
+      // --- Trigger Shockwave ---
+      clapCenter = {
+        x: (hands[0].x + hands[1].x) / 2,
+        y: (hands[0].y + hands[1].y) / 2,
+      };
+      clapStrength = 50; // Set initial strength of the shockwave
+      wasClappingLastFrame = true;
+    } else if (palmDist >= clapThreshold) {
+      wasClappingLastFrame = false;
+    }
+  } else {
+    wasClappingLastFrame = false; // Reset if two hands aren't present
+  }
+  
+  // --- Decay shockwave ---
+  if (clapStrength > 0) {
+    clapStrength *= 0.9; // Decay the strength each frame
+    if (clapStrength < 0.1) {
+      clapStrength = 0;
+      clapCenter = null;
+    }
+  }
+
   // Map microphone volume to influence radius
   let volume = mic.getLevel();
   // Map volume (0-1) to a larger radius. Use 0.3 as a high water mark for sensitivity.
@@ -249,7 +296,6 @@ function draw() {
   if (frameCount % 200 < 5) { // Occasionally pulse
     influenceRadius = 600;
   }
-
 
   background(0); // Solid black background
 
