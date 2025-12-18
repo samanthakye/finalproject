@@ -267,10 +267,7 @@ function drawStartScreen() {
 
   // --- Start Prompt ---
   textSize(18);
-  // Blinking effect for the start text
-  if (frameCount % 60 < 40) {
-    text("Click anywhere to start", width / 2, height * 0.85);
-  }
+  text("Click anywhere to start", width / 2, height * 0.85);
 }
 
 function runSimulation() {
