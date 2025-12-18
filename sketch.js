@@ -164,7 +164,6 @@ function onResults(results) {
 function setup() {
   createCanvas(windowWidth, windowHeight);
   noStroke();
-  noCursor();
 
   createGrid();
 
@@ -250,7 +249,51 @@ function drawHandLandmarks() {
   }
 }
 
-function draw() {
+let appState = 'start'; // Can be 'start' or 'running'
+
+function drawStartScreen() {
+  background(0);
+  cursor(ARROW);
+  
+  // --- Text Styling ---
+  fill(255); // White text
+  textFont('monospace');
+  textAlign(CENTER, CENTER);
+  
+  // --- Title ---
+  textSize(24);
+  text("Interactive Dot Grid", width / 2, height / 4);
+
+  // --- Controls Key ---
+  textSize(16);
+  textAlign(LEFT, TOP);
+  // Using an array and join to avoid indentation issues with template literals
+  const keyText = [
+    'Hand Pose Controls:',
+    '',
+    '[ 0 Fingers (Fist) ]',
+    'Black Hole: Attracts and destroys dots.',
+    '',
+    '[ 1-4 Fingers ]',
+    'Interact: Changes dot size and brightness.',
+    '',
+    '[ 5 Fingers (Open Hand) ]',
+    'Creator: Spawns new dots.'
+  ].join('\n');
+  
+  textAlign(CENTER, CENTER);
+  text(keyText, width / 2, height / 2);
+
+  // --- Start Prompt ---
+  textSize(18);
+  // Blinking effect for the start text
+  if (frameCount % 60 < 40) {
+    text("Click anywhere to start", width / 2, height * 0.85);
+  }
+}
+
+function runSimulation() {
+  noCursor(); // Hide cursor during simulation
   // --- Creator Mode ---
   for (const hand of hands) {
     // With an open hand, have a chance to spawn new dots
@@ -303,8 +346,24 @@ function draw() {
   }
 }
 
+function draw() {
+  if (appState === 'start') {
+    drawStartScreen();
+  } else if (appState === 'running') {
+    runSimulation();
+  }
+}
+
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
   dots = [];
   createGrid();
+}
+
+function mousePressed() {
+  // Start the simulation and audio context on the first click
+  if (appState === 'start') {
+    appState = 'running';
+    userStartAudio(); // Required to enable audio in browsers
+  }
 }
